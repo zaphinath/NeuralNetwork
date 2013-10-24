@@ -38,6 +38,9 @@ public class NeuralNetwork {
 	private double[][] hoPrevWeightsDelta;
 	private double[] oPrevBiasesDelta;
 	
+	
+	//Weights
+	//Sigmoid Function 1/(1+e^-(Input_all * Weight_all))
 	/**
 	 * Needs to add one to every layer except output for a bias
 	 * @param numInputs
