@@ -11,8 +11,8 @@ import java.util.ArrayList;
 public class NeuralNetwork {
 	
 	private int maxEpochs = 4000;
-	private double learnRate = 0.3;
-	private double startWeight = .1;
+	private double learnRate = 0.5;
+	private double startWeight = .2;
 	
 	//Need to be set
 	private int numInput; //Number of input nodes
@@ -22,8 +22,10 @@ public class NeuralNetwork {
 	      
 	private double[][] weights; //[eachLayer][nodesperlayer]
 	private double[][] sigNodes;//[numhidden+1 (for outputlayer)][nodes per layer]
-	private double[][] tmpCalcMatrix;//Same size as weights for calculating input*weight before sigmoid is calculated and put in sigNodes
-
+	//private double[][] tmpCalcMatrix;//Same size as weights for calculating input*weight before sigmoid is calculated and put in sigNodes
+	private double[][] deltaSigNodes; // the deltaSigmoid backprop calc
+	private double[][] deltaWeights; // the delta in weight changes 
+	
 	public NeuralNetwork(int numInput, int numHidden, int[] numNodesPerHidden, int numOutput) {
 		assert numNodesPerHidden.length == numHidden;
 		
@@ -35,23 +37,42 @@ public class NeuralNetwork {
 		this.weights = createWeights(numInput, numHidden, numNodesPerHidden, numOutput);
 		this.sigNodes = createSigmoidMatrix(numHidden, numNodesPerHidden,numOutput);
 		//this.tmpCalcMatrix = cloneEmptyMatrix(weights);
+		this.deltaSigNodes = cloneEmptyMatrix(sigNodes);
+		this.deltaWeights = cloneEmptyMatrix(weights);
 	}
 
 
-	public void train(double[] inputValues, int expectedOutNode) {
+	public void train(double[] inputValues, double[] expectedOutValues) {
 		//calculate sigmoids
 		for (int i = 0; i < sigNodes.length; i++) {
 			for (int j = 0; j < sigNodes[i].length; j++) {
-				// use input values to start with
 				double tmpSum = 0;
+				// first sigNode array - uses input values
 				if (i == 0) {
-					for (int k = 0; k < weights[0].length; k++) {
-						int tmpCount = 0; // this is to match the input node position 
-						if (k % inputValues.length == j) {
-							tmpSum += inputValues[tmpCount]*weights[0][k];
-							tmpCount++;
+					// Make tmp array of values input * weight => same size as weight
+					double[] preSigmoid = new double[weights[i].length];
+					int tmpCount = 0; // corresponds to input node
+					// Loop through weights
+					for (int k = 0; k < weights[i].length; k++) {
+						if (weights[i].length > inputValues.length) {
+							if (k/inputValues.length == 1) {
+								tmpCount++;
+							}
+						} else {
+							tmpCount=k;
+						}
+						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
+//						System.out.println("INPUT[tmpCount]" + inputValues[tmpCount]);
+//						System.out.println("Presig[k]=" + preSigmoid[k]);
+					}
+					//Add tmp values per sigNodes[i][j];
+					for ( int k = 0; k < preSigmoid.length; k++) {
+						if (k % sigNodes[i].length == j) {
+							//System.out.println("K="+ k + " preSig=" + preSigmoid[k]);
+							tmpSum += preSigmoid[k];
 						}
 					}
+
 				} else {
 					for (int k = 0; k < weights[i].length; k++) {
 						int tmpCount = 0; // this is to match the input node position 
@@ -61,9 +82,26 @@ public class NeuralNetwork {
 						}
 					}
 				}
+//				System.out.println(tmpSum);
 				sigNodes[i][j] = 1/(1+Math.pow(Math.E,-(tmpSum)));
 			}
 		}
+		//Sigmoids are calculated 
+		//BackPropogate and update weights
+		// calculate deltasigmoids && deltaweights
+		for (int i = deltaSigNodes.length-1; i > 0; i--) {
+			for (int j = 0; j < deltaSigNodes[i].length; j++) {
+				//Out nodes have diff formula
+				if (i == deltaSigNodes.length-1) {
+					deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(expectedOutValues[j]-sigNodes[i][j]);
+				} else {
+					
+				}
+			}
+		}
+		
+		//update weights
+		
 	}
 	
 	public void test(double[] inputValues, int expectedOutNode) {
@@ -213,20 +251,51 @@ public class NeuralNetwork {
 		this.sigNodes = sigNodes;
 	}
 
+//	/**
+//	 * @return the tmpCalcMatrix
+//	 */
+//	public double[][] getTmpCalcMatrix() {
+//		return tmpCalcMatrix;
+//	}
+//
+//
+//	/**
+//	 * @param tmpCalcMatrix the tmpCalcMatrix to set
+//	 */
+//	public void setTmpCalcMatrix(double[][] tmpCalcMatrix) {
+//		this.tmpCalcMatrix = tmpCalcMatrix;
+//	}
+
 
 	/**
-	 * @return the tmpCalcMatrix
+	 * @return the deltaSigNodes
 	 */
-	public double[][] getTmpCalcMatrix() {
-		return tmpCalcMatrix;
+	public double[][] getDeltaSigNodes() {
+		return deltaSigNodes;
 	}
 
 
 	/**
-	 * @param tmpCalcMatrix the tmpCalcMatrix to set
+	 * @param deltaSigNodes the deltaSigNodes to set
 	 */
-	public void setTmpCalcMatrix(double[][] tmpCalcMatrix) {
-		this.tmpCalcMatrix = tmpCalcMatrix;
+	public void setDeltaSigNodes(double[][] deltaSigNodes) {
+		this.deltaSigNodes = deltaSigNodes;
+	}
+
+
+	/**
+	 * @return the deltaWeights
+	 */
+	public double[][] getDeltaWeights() {
+		return deltaWeights;
+	}
+
+
+	/**
+	 * @param deltaWeights the deltaWeights to set
+	 */
+	public void setDeltaWeights(double[][] deltaWeights) {
+		this.deltaWeights = deltaWeights;
 	}
 
 
@@ -281,17 +350,17 @@ public class NeuralNetwork {
 		return sig;
 	}
 	
-//	/**
-//	 * @param weights
-//	 * @return
-//	 */
-//	private double[][] cloneEmptyMatrix(double[][] weights) {
-//		double[][] clone = new double[weights.length][];
-//		for (int i = 0; i < weights[0].length; i++) {
-//			clone[i] = new double[weights[i].length];
-//		}
-//		return null;
-//	}
+	/**
+	 * @param weights
+	 * @return
+	 */
+	private double[][] cloneEmptyMatrix(double[][] matrix) {
+		double[][] clone = new double[matrix.length][];
+		for (int i = 0; i < matrix.length; i++) {
+			clone[i] = new double[matrix[i].length];
+		}
+		return clone;
+	}
 
 	public void printMatrix(double[][] matrix) {
 		for (int i = 0; i < matrix.length; i++) {
