@@ -97,6 +97,17 @@ public class NeuralNetwork {
 				} else {
 					
 				}
+				//update delta weights
+				int tmpCount = 0; //
+				for (int k = 0; k < deltaWeights[i].length; k++) {
+					if (deltaWeights[i].length > deltaSigNodes[i].length) {
+						if (k/deltaWeights[i].length == 1) {
+							tmpCount++;
+						}
+					} else {
+						tmpCount=k;
+					} 
+				}
 			}
 		}
 		
