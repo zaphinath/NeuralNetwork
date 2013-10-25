@@ -11,8 +11,8 @@ import java.util.ArrayList;
 public class NeuralNetwork {
 	
 	private int maxEpochs = 4000;
-	private double learnRate = 0.5;
-	private double startWeight = .2;
+	private double learnRate = 0.3;
+	private double startWeight = .1;
 	
 	//Need to be set
 	private int numInput; //Number of input nodes
@@ -96,6 +96,7 @@ public class NeuralNetwork {
 					if ( deltaSigNodes[i].length < weights[i+1].length) {
 						// two more cases when dsig < weights+1
 						// Need to loop through weights
+						//TODO - formula may be wrong - may want weights*deltaweights
 						double tmpSum = 0;
 						int tmpCount2 = 0; // keeps track of deltasig+1 col
 						for (int k = j*weights[i+1].length; k < weights[i+1].length; k++) {
@@ -114,7 +115,7 @@ public class NeuralNetwork {
 						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(tmpSum);
 					} else {
 						// case where they are equal. it will never be less
-						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(deltaSigNodes[i+1][0]*weights[i+1][j]);
+						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(deltaWeights[i+1][j]*weights[i+1][j]);
 					}
 				}
 			}
@@ -122,16 +123,20 @@ public class NeuralNetwork {
 			int tmpCount = 0; //to delta[i]
 			int tmpCount2 = 0; // to signode-1
 			for (int k = 0; k < deltaWeights[i].length; k++) {
-				//for tmpcount
-				if (deltaSigNodes[i].length > deltaWeights[i].length) {
-					
-				} else {
-					tmpCount = k;
-				}
-				//for tmpcount2
 				//Need to account for end of array
 				if (i > 0) {
+					//for tmpcount
+					if (deltaSigNodes[i].length > deltaWeights[i].length) {
+						// won't happen according to my design
+					} else if (deltaSigNodes[i].length == deltaWeights[i].length ){
+						tmpCount = k;
+					} else {
+						// case where deltaSigNodes[i].length < deltaWeights[i].length
+						
+					}
+					//for tmpcount2
 					if (deltaSigNodes[i-1].length > deltaWeights[i].length) {
+						//don't think this case can ever happen
 						//multiple nodes to count because dnodes is larger
 					} else if (deltaSigNodes[i-1].length == deltaWeights[i].length) {
 						tmpCount2 = k;
@@ -140,10 +145,19 @@ public class NeuralNetwork {
 							tmpCount2++;
 						}
 					}
-				}
-				if (i > 0) {
 					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
-				} 
+				} else {
+					//Where i = 0 and we need to use input nodes.
+					if (inputValues.length == deltaWeights[i].length) {
+						tmpCount2 = k;
+					} else {
+						if (k/deltaWeights[i].length == 1) {
+							tmpCount2++;
+						}
+					}
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
+				}
+				
 			}
 		}
 		
