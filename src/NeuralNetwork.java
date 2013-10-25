@@ -95,27 +95,36 @@ public class NeuralNetwork {
 				if (i == deltaSigNodes.length-1) {
 					deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(expectedOutValues[j]-sigNodes[i][j]);
 				} else {
-					
-				}
-				//update delta weights
-				int tmpCount = 0; //
-				for (int k = 0; k < deltaWeights[i].length; k++) {
-					if (deltaWeights[i].length > deltaSigNodes[i].length) {
-						if (k/deltaWeights[i].length == 1) {
-							tmpCount++;
-						}
-					} else {
-						tmpCount=k;
-					} 
+					deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(expectedOutValues[j]-sigNodes[i][j]);
 				}
 			}
+			//update delta weights @ i
+//			int tmpCount = 0; //to delta[i]
+//			int tmpCount2 = 0; // to signode-1
+//			for (int k = 0; k < deltaWeights[i].length; k++) {
+//				if (deltaWeights[i].length > deltaSigNodes[i].length) {
+//					if (k/deltaWeights[i].length == 1) {
+//						tmpCount++;
+//					}
+//				} else {
+//					tmpCount=k;
+//				} 
+//				if (i >= 1) {
+//					if (deltaWeights[i].length > SigNodes[i-1]) {
+//						if (k/deltaWeights[i].length == 1) {
+//							tmpCount++;
+//						}
+//					}
+//				}
+//				deltaWeights[i][k] = learnRate*deltaSigNodes[]
+//			}
 		}
 		
 		//update weights
 		
 	}
 	
-	public void test(double[] inputValues, int expectedOutNode) {
+	public void test(double[] inputValues, double[] expectedOutValues) {
 		
 	}
 	
