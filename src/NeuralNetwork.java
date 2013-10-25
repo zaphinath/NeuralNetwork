@@ -54,6 +54,7 @@ public class NeuralNetwork {
 					int tmpCount = 0; // corresponds to input node
 					// Loop through weights
 					for (int k = 0; k < weights[i].length; k++) {
+						//TODO possible bug because i think there is a 3rd case here
 						if (weights[i].length > inputValues.length) {
 							if (k/inputValues.length == 1) {
 								tmpCount++;
@@ -62,8 +63,6 @@ public class NeuralNetwork {
 							tmpCount=k;
 						}
 						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
-//						System.out.println("INPUT[tmpCount]" + inputValues[tmpCount]);
-//						System.out.println("Presig[k]=" + preSigmoid[k]);
 					}
 					//Add tmp values per sigNodes[i][j];
 					for ( int k = 0; k < preSigmoid.length; k++) {
@@ -72,7 +71,6 @@ public class NeuralNetwork {
 							tmpSum += preSigmoid[k];
 						}
 					}
-
 				} else {
 					for (int k = 0; k < weights[i].length; k++) {
 						int tmpCount = 0; // this is to match the input node position 
@@ -82,42 +80,71 @@ public class NeuralNetwork {
 						}
 					}
 				}
-//				System.out.println(tmpSum);
 				sigNodes[i][j] = 1/(1+Math.pow(Math.E,-(tmpSum)));
 			}
 		}
 		//Sigmoids are calculated 
 		//BackPropogate and update weights
 		// calculate deltasigmoids && deltaweights
-		for (int i = deltaSigNodes.length-1; i > 0; i--) {
+		for (int i = deltaSigNodes.length-1; i >= 0; i--) {
 			for (int j = 0; j < deltaSigNodes[i].length; j++) {
 				//Out nodes have diff formula
 				if (i == deltaSigNodes.length-1) {
 					deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(expectedOutValues[j]-sigNodes[i][j]);
+				//Hidden Nodes
 				} else {
-					deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(expectedOutValues[j]-sigNodes[i][j]);
+					if ( deltaSigNodes[i].length < weights[i+1].length) {
+						// two more cases when dsig < weights+1
+						// Need to loop through weights
+						double tmpSum = 0;
+						int tmpCount2 = 0; // keeps track of deltasig+1 col
+						for (int k = j*weights[i+1].length; k < weights[i+1].length; k++) {
+							if (weights[i+1].length == deltaSigNodes[i+1].length) {
+								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][k]);
+							} else {
+								// dsig+1.length < weights+1.length
+								//uses tmpcount2
+								tmpSum += weights[i+1][tmpCount2] * deltaSigNodes[i+1][k];
+								if (weights[i+1].length / sigNodes[i+1].length == 1) {
+									break;
+								}
+								tmpCount2++;
+							}
+						}
+						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(tmpSum);
+					} else {
+						// case where they are equal. it will never be less
+						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(deltaSigNodes[i+1][0]*weights[i+1][j]);
+					}
 				}
 			}
 			//update delta weights @ i
-//			int tmpCount = 0; //to delta[i]
-//			int tmpCount2 = 0; // to signode-1
-//			for (int k = 0; k < deltaWeights[i].length; k++) {
-//				if (deltaWeights[i].length > deltaSigNodes[i].length) {
-//					if (k/deltaWeights[i].length == 1) {
-//						tmpCount++;
-//					}
-//				} else {
-//					tmpCount=k;
-//				} 
-//				if (i >= 1) {
-//					if (deltaWeights[i].length > SigNodes[i-1]) {
-//						if (k/deltaWeights[i].length == 1) {
-//							tmpCount++;
-//						}
-//					}
-//				}
-//				deltaWeights[i][k] = learnRate*deltaSigNodes[]
-//			}
+			int tmpCount = 0; //to delta[i]
+			int tmpCount2 = 0; // to signode-1
+			for (int k = 0; k < deltaWeights[i].length; k++) {
+				//for tmpcount
+				if (deltaSigNodes[i].length > deltaWeights[i].length) {
+					
+				} else {
+					tmpCount = k;
+				}
+				//for tmpcount2
+				//Need to account for end of array
+				if (i > 0) {
+					if (deltaSigNodes[i-1].length > deltaWeights[i].length) {
+						//multiple nodes to count because dnodes is larger
+					} else if (deltaSigNodes[i-1].length == deltaWeights[i].length) {
+						tmpCount2 = k;
+					} else {
+						if (k/deltaWeights[i].length == 1) {
+							tmpCount2++;
+						}
+					}
+				}
+				if (i > 0) {
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
+				} 
+			}
 		}
 		
 		//update weights
