@@ -168,8 +168,30 @@ public class NeuralNetwork {
 		}
 	}
 	
-	public void test(double[] inputValues, double[] expectedOutValues) {
-		
+	/**
+	 * 
+	 * @param inputValues
+	 * @param expectedOutValues
+	 * @return the accuracy of the test.
+	 */
+	public double test(double[][] inputValues, double[] expectedOutValues) {
+		double accurate = 0;
+		double inaccurate = 0;
+		//loop through the array of input values and process them
+		for (int i = 0; i < inputValues.length; i++) {
+			for (int j = 0; j < inputValues[i].length; j++) {
+				//loop through the neural network. 
+				for (int k = 0; k < weights.length; k++) {
+					for (int l = 0; l < weights[k].length; l++) {
+						//Two cases to account for
+						// In == weight length
+						// In < weight length
+					}
+				}
+				//made through NN and need to calculate the accuracy
+			}
+		}
+		return accurate/(accurate+inaccurate);
 	}
 	
 	/**
@@ -178,7 +200,6 @@ public class NeuralNetwork {
 	public int getMaxEpochs() {
 		return maxEpochs;
 	}
-
 
 	/**
 	 * @param maxEpochs the maxEpochs to set
