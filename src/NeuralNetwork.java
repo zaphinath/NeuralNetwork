@@ -11,8 +11,8 @@ import java.util.ArrayList;
 public class NeuralNetwork {
 	
 	private int maxEpochs = 4000;
-	private double learnRate = 0.3;
-	private double startWeight = .1;
+	private double learnRate = 0.5;
+	private double startWeight = .2;
 	
 	//Need to be set
 	private int numInput; //Number of input nodes
@@ -160,9 +160,12 @@ public class NeuralNetwork {
 				
 			}
 		}
-		
 		//update weights
-		
+		for (int i = 0; i < weights.length; i++) {
+			for (int j = 0; j < weights[i].length; j++) {
+				weights[i][j] += deltaWeights[i][j];
+			}
+		}
 	}
 	
 	public void test(double[] inputValues, double[] expectedOutValues) {
