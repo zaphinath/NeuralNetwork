@@ -56,7 +56,7 @@ public class NeuralNetwork {
 					for (int k = 0; k < weights[i].length; k++) {
 						//TODO possible bug because i think there is a 3rd case here
 						if (weights[i].length > inputValues.length) {
-							if (k/inputValues.length == 1) {
+							if (k%inputValues.length == 0) {
 								tmpCount++;
 							}
 						} else {
@@ -99,14 +99,14 @@ public class NeuralNetwork {
 						//TODO - formula may be wrong - may want weights*deltaweights
 						double tmpSum = 0;
 						int tmpCount2 = 0; // keeps track of deltasig+1 col
-						for (int k = j*weights[i+1].length; k < weights[i+1].length; k++) {
+						for (int k = j*weights[i+1].length; k < weights[i+1].length-1; k++) {
 							if (weights[i+1].length == deltaSigNodes[i+1].length) {
 								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][k]);
 							} else {
 								// dsig+1.length < weights+1.length
 								//uses tmpcount2
 								tmpSum += weights[i+1][tmpCount2] * deltaSigNodes[i+1][k];
-								if (weights[i+1].length / sigNodes[i+1].length == 1) {
+								if (weights[i+1].length % sigNodes[i+1].length == 0) {
 									break;
 								}
 								tmpCount2++;
