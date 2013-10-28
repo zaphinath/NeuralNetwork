@@ -11,11 +11,11 @@ import java.util.Random;
  */
 public class NeuralNetwork extends SupervisedLearner {
 	
-	private int maxEpochs = 2;
+	private int maxEpochs = 1000;
 	private double learnRate = 0.5;
 	private double startWeightMax = .2;
 	private double startWeightMin = -.2;
-	private double momentum = .3;
+	private double momentum = .5;
 	private boolean haveMomentum = false;
 	private double stoppingThreshold = .05;
 	
@@ -146,6 +146,7 @@ public class NeuralNetwork extends SupervisedLearner {
 			for (int k = 0; k < deltaWeights[i].length; k++) {
 				//Need to account for end of array
 				if (i > 0) {
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
 					//for tmpcount
 					if (deltaSigNodes[i].length > deltaWeights[i].length) {
 						// won't happen according to my design
@@ -176,17 +177,19 @@ public class NeuralNetwork extends SupervisedLearner {
 							tmpCount2++;
 						}
 					}
-					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
+					
 				} else {
+					//System.out.println("tmpCount2=" + tmpCount2 + "  inputLength="+inputValues.length + "  deltaWeights[i].length="+deltaWeights[i].length + "  k="+k);
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
 					//Where i = 0 and we need to use input nodes.
 					if (inputValues.length == deltaWeights[i].length) {
 						tmpCount2 = k;
 					} else {
-						if (k/deltaWeights[i].length == 1) {
+						if (k/deltaSigNodes[i].length == 1) {
 							tmpCount2++;
 						}
 					}
-					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
+
 				}
 				
 			}
@@ -461,9 +464,11 @@ public class NeuralNetwork extends SupervisedLearner {
 
 	public void printMatrix(double[][] matrix) {
 		for (int i = 0; i < matrix.length; i++) {
+			System.out.print("i=" + i + "  (");
 			for (int j = 0; j < matrix[i].length; j++) {
-				System.out.println("i=" + i + "  j=" + j + "  value="+matrix[i][j]);
+				System.out.print("["+matrix[i][j]+"] ");
 			}
+			System.out.println(")");
 		}
 	}
 
@@ -495,6 +500,26 @@ public class NeuralNetwork extends SupervisedLearner {
 		this.haveMomentum = haveMomentum;
 	}
 
+	private double[] getResultsArray(Matrix labels, int index) {
+		double[] result = new double[labels.valueCount(0)];
+		
+		for (int i = 0; i < result.length; i++) {
+			//System.out.println("labels=" + (int)labels.get(i, 0) + "  i=" + i);
+			if (labels.get(index, 0) == i) {
+				result[i] = 1;
+				//System.out.println("HERE");
+			} else {
+				result[i] = 0;
+			}
+		}
+//		System.out.print("RESULT[");
+//		for (int i = 0; i < result.length; i++) {
+//			System.out.print("i=" + i + "  [i]="+ result[i] + "  ");
+//		}
+//		System.out.println("] @ index="+index);
+		return result;
+	}
+	
 	/* (non-Javadoc)
 	 * @see SupervisedLearner#train(Matrix, Matrix)
 	 */
@@ -502,7 +527,7 @@ public class NeuralNetwork extends SupervisedLearner {
 	public void train(Matrix features, Matrix labels) throws Exception {
 		this.numInput = features.cols();
 		this.numHidden = 3;
-		this.numNodesPerHidden = new int[]{3,3,3,3,3};
+		this.numNodesPerHidden = new int[]{3,3,3};
 		this.numOutput = labels.valueCount(0);
 		
 		this.weights = createWeights(numInput, numHidden, numNodesPerHidden, numOutput);
@@ -514,10 +539,11 @@ public class NeuralNetwork extends SupervisedLearner {
 		
 		//loop through all epocs and check for breaking conditions
 		for (int h = 0; h < maxEpochs; h++) {
-			printMatrix(deltaWeights);
+			//printMatrix(deltaWeights);
 			for (int i = 0; i< features.rows(); i++) {
-				
-				train(features.row(i), new double[]{0,1,0});
+				double [] end = getResultsArray(labels, i);
+				//System.out.println("Lables" + labels.get(i, 0));
+				train(features.row(i), end);
 			}
 			// check breaking conditions met
 			boolean thresholdMet = true;
@@ -587,8 +613,15 @@ public class NeuralNetwork extends SupervisedLearner {
 				}
 			}
 		}
-		for (int i = 0; i < sigNodes[sigNodes.length-1].length; i++) {
-			//System.out.println(sigNodes[sigNodes.length-1][i]);
+		printMatrix(sigNodes);
+		labels[0] = 0;
+		//System.out.println("Signodes Length: " + sigNodes.length);
+		for (int i = 1; i < numOutput; i++) {
+			//System.out.println("i=" + i +"  @i="+sigNodes[sigNodes.length-1][i] + "  @i-1="+sigNodes[sigNodes.length-1][i-1]);
+			if (sigNodes[sigNodes.length-1][i] > sigNodes[sigNodes.length-1][i-1] ) {
+				labels[0] = i;
+			}
 		}
+		//System.out.println(labels[0]);
 	}
 }
