@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * 
@@ -8,11 +9,15 @@ import java.util.ArrayList;
  * @author zaphinath
  *
  */
-public class NeuralNetwork {
+public class NeuralNetwork extends SupervisedLearner {
 	
-	private int maxEpochs = 4000;
+	private int maxEpochs = 500;
 	private double learnRate = 0.5;
-	private double startWeight = .2;
+	private double startWeightMax = .2;
+	private double startWeightMin = -.2;
+	private double momentum = .3;
+	private boolean haveMomentum = false;
+	private double stoppingThreshold = .05;
 	
 	//Need to be set
 	private int numInput; //Number of input nodes
@@ -22,7 +27,6 @@ public class NeuralNetwork {
 	      
 	private double[][] weights; //[eachLayer][nodesperlayer]
 	private double[][] sigNodes;//[numhidden+1 (for outputlayer)][nodes per layer]
-	//private double[][] tmpCalcMatrix;//Same size as weights for calculating input*weight before sigmoid is calculated and put in sigNodes
 	private double[][] deltaSigNodes; // the deltaSigmoid backprop calc
 	private double[][] deltaWeights; // the delta in weight changes 
 	
@@ -39,6 +43,14 @@ public class NeuralNetwork {
 		//this.tmpCalcMatrix = cloneEmptyMatrix(weights);
 		this.deltaSigNodes = cloneEmptyMatrix(sigNodes);
 		this.deltaWeights = cloneEmptyMatrix(weights);
+	}
+
+
+	/**
+	 * @param rand
+	 */
+	public NeuralNetwork(Random rand) {
+		// TODO Auto-generated constructor stub
 	}
 
 
@@ -62,6 +74,12 @@ public class NeuralNetwork {
 						} else {
 							tmpCount=k;
 						}
+						if (tmpCount >= inputValues.length) {
+							break;
+						}
+						//System.out.println(weights[i][k]);
+						//System.out.println(inputValues[tmpCount]);
+						//System.out.println("tmpCount = "+tmpCount + "  k = "+k);
 						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
 					}
 					//Add tmp values per sigNodes[i][j];
@@ -132,6 +150,8 @@ public class NeuralNetwork {
 						tmpCount = k;
 					} else {
 						// case where deltaSigNodes[i].length < deltaWeights[i].length
+						//TODO
+						//System.out.println("WARNING");
 						
 					}
 					//for tmpcount2
@@ -167,32 +187,7 @@ public class NeuralNetwork {
 			}
 		}
 	}
-	
-	/**
-	 * 
-	 * @param inputValues
-	 * @param expectedOutValues
-	 * @return the accuracy of the test.
-	 */
-	public double test(double[][] inputValues, double[] expectedOutValues) {
-		double accurate = 0;
-		double inaccurate = 0;
-		//loop through the array of input values and process them
-		for (int i = 0; i < inputValues.length; i++) {
-			for (int j = 0; j < inputValues[i].length; j++) {
-				//loop through the neural network. 
-				for (int k = 0; k < weights.length; k++) {
-					for (int l = 0; l < weights[k].length; l++) {
-						//Two cases to account for
-						// In == weight length
-						// In < weight length
-					}
-				}
-				//made through NN and need to calculate the accuracy
-			}
-		}
-		return accurate/(accurate+inaccurate);
-	}
+
 	
 	/**
 	 * @return the maxEpochs
@@ -224,20 +219,51 @@ public class NeuralNetwork {
 		this.learnRate = learnRate;
 	}
 
-
 	/**
-	 * @return the startWeight
+	 * @return the startWeightMax
 	 */
-	public double getStartWeight() {
-		return startWeight;
+	public double getStartWeightMax() {
+		return startWeightMax;
 	}
 
 
 	/**
-	 * @param startWeight the startWeight to set
+	 * @param startWeightMax the startWeightMax to set
 	 */
-	public void setStartWeight(double startWeight) {
-		this.startWeight = startWeight;
+	public void setStartWeightMax(double startWeightMax) {
+		this.startWeightMax = startWeightMax;
+	}
+
+
+	/**
+	 * @return the startWeightMin
+	 */
+	public double getStartWeightMin() {
+		return startWeightMin;
+	}
+
+
+	/**
+	 * @param startWeightMin the startWeightMin to set
+	 */
+	public void setStartWeightMin(double startWeightMin) {
+		this.startWeightMin = startWeightMin;
+	}
+
+
+	/**
+	 * @return the stoppingThreshold
+	 */
+	public double getStoppingThreshold() {
+		return stoppingThreshold;
+	}
+
+
+	/**
+	 * @param stoppingThreshold the stoppingThreshold to set
+	 */
+	public void setStoppingThreshold(double stoppingThreshold) {
+		this.stoppingThreshold = stoppingThreshold;
 	}
 
 
@@ -248,14 +274,12 @@ public class NeuralNetwork {
 		return numInput;
 	}
 
-
 	/**
 	 * @param numInput the numInput to set
 	 */
 	public void setNumInput(int numInput) {
 		this.numInput = numInput;
 	}
-
 
 	/**
 	 * @return the numHidden
@@ -264,14 +288,12 @@ public class NeuralNetwork {
 		return numHidden;
 	}
 
-
 	/**
 	 * @param numHidden the numHidden to set
 	 */
 	public void setNumHidden(int numHidden) {
 		this.numHidden = numHidden;
 	}
-
 
 	/**
 	 * @return the numOutput
@@ -280,14 +302,12 @@ public class NeuralNetwork {
 		return numOutput;
 	}
 
-
 	/**
 	 * @param numOutput the numOutput to set
 	 */
 	public void setNumOutput(int numOutput) {
 		this.numOutput = numOutput;
 	}
-
 
 	/**
 	 * @return the numNodesPerHidden
@@ -296,14 +316,12 @@ public class NeuralNetwork {
 		return numNodesPerHidden;
 	}
 
-
 	/**
 	 * @param numNodesPerHidden the numNodesPerHidden to set
 	 */
 	public void setNumNodesPerHidden(int[] numNodesPerHidden) {
 		this.numNodesPerHidden = numNodesPerHidden;
 	}
-
 
 	/**
 	 * @return the weights
@@ -312,14 +330,12 @@ public class NeuralNetwork {
 		return weights;
 	}
 
-
 	/**
 	 * @param weights the weights to set
 	 */
 	public void setWeights(double[][] weights) {
 		this.weights = weights;
 	}
-
 
 	/**
 	 * @return the sigNodes
@@ -328,29 +344,12 @@ public class NeuralNetwork {
 		return sigNodes;
 	}
 
-
 	/**
 	 * @param sigNodes the sigNodes to set
 	 */
 	public void setSigNodes(double[][] sigNodes) {
 		this.sigNodes = sigNodes;
 	}
-
-//	/**
-//	 * @return the tmpCalcMatrix
-//	 */
-//	public double[][] getTmpCalcMatrix() {
-//		return tmpCalcMatrix;
-//	}
-//
-//
-//	/**
-//	 * @param tmpCalcMatrix the tmpCalcMatrix to set
-//	 */
-//	public void setTmpCalcMatrix(double[][] tmpCalcMatrix) {
-//		this.tmpCalcMatrix = tmpCalcMatrix;
-//	}
-
 
 	/**
 	 * @return the deltaSigNodes
@@ -359,14 +358,12 @@ public class NeuralNetwork {
 		return deltaSigNodes;
 	}
 
-
 	/**
 	 * @param deltaSigNodes the deltaSigNodes to set
 	 */
 	public void setDeltaSigNodes(double[][] deltaSigNodes) {
 		this.deltaSigNodes = deltaSigNodes;
 	}
-
 
 	/**
 	 * @return the deltaWeights
@@ -375,14 +372,12 @@ public class NeuralNetwork {
 		return deltaWeights;
 	}
 
-
 	/**
 	 * @param deltaWeights the deltaWeights to set
 	 */
 	public void setDeltaWeights(double[][] deltaWeights) {
 		this.deltaWeights = deltaWeights;
 	}
-
 
 	/**
 	 * Creates a 2D Matrix of varying heights that represents the weight between layers
@@ -399,23 +394,28 @@ public class NeuralNetwork {
 		//Set num weights from input nodes
 		w[0] = new double[numInput*numNodesPerHidden[0]];
 		for (int i = 0; i < w[0].length; i++) {
-			w[0][i] = startWeight;
+			double random = new Random().nextDouble();
+			double result = startWeightMin + (random * (startWeightMax - startWeightMin));
+			w[0][i] = result;
 		}
 		//set output of each hidden
 		for (int i = 1; i < numHidden; i++) {
 			w[i] = new double[numNodesPerHidden[i-1]*numNodesPerHidden[i]];
 			for (int j = 0; j < w[i].length; j++) {
-				w[i][j] = startWeight;
+				double random = new Random().nextDouble();
+				double result = startWeightMin + (random * (startWeightMax - startWeightMin));
+				w[i][j] = result;
 			}
 		}
 		//set last weight between last hidden and output
 		w[numHidden] = new double[numNodesPerHidden[numHidden-1]*numOutput];
 		for (int i = 0; i < w[numHidden].length; i++) {
-			w[numHidden][i] = startWeight;
+			double random = new Random().nextDouble();
+			double result = startWeightMin + (random * (startWeightMax - startWeightMin));
+			w[numHidden][i] = result;
 		}		
 		return w;
 	}
-
 	
 	/**
 	 * @param numHidden2
@@ -453,5 +453,103 @@ public class NeuralNetwork {
 				System.out.println("i=" + i + "  j=" + j + "  value="+matrix[i][j]);
 			}
 		}
+	}
+
+	/**
+	 * @return the momentum
+	 */
+	public double getMomentum() {
+		return momentum;
+	}
+
+	/**
+	 * @param momentum the momentum to set
+	 */
+	public void setMomentum(double momentum) {
+		this.momentum = momentum;
+	}
+
+	/**
+	 * @return the haveMomentum
+	 */
+	public boolean isHaveMomentum() {
+		return haveMomentum;
+	}
+
+	/**
+	 * @param haveMomentum the haveMomentum to set
+	 */
+	public void setHaveMomentum(boolean haveMomentum) {
+		this.haveMomentum = haveMomentum;
+	}
+
+	/* (non-Javadoc)
+	 * @see SupervisedLearner#train(Matrix, Matrix)
+	 */
+	@Override
+	public void train(Matrix features, Matrix labels) throws Exception {
+		this.numInput = features.cols();
+		this.numHidden = 10;
+		this.numNodesPerHidden = new int[]{10,10,10,10,10,10,10,5,5,5};
+		this.numOutput = labels.valueCount(0);
+		
+		this.weights = createWeights(numInput, numHidden, numNodesPerHidden, numOutput);
+		this.sigNodes = createSigmoidMatrix(numHidden, numNodesPerHidden,numOutput);
+		this.deltaSigNodes = cloneEmptyMatrix(sigNodes);
+		this.deltaWeights = cloneEmptyMatrix(weights);
+		
+		//printMatrix(weights);
+		
+		//loop through all epocs and check for breaking conditions
+		for (int h = 0; h < maxEpochs; h++) {
+			for (int i = 0; i< features.rows(); i++) {
+				
+				train(features.row(i), new double[]{0,1,0});
+			}
+			// check breaking conditions met
+			boolean thresholdMet = true;
+			for (int i = 0; i < deltaWeights.length; i++) {
+				for (int j = 0; j < deltaWeights[i].length; j++) {
+					if (deltaWeights[i][j] > stoppingThreshold) {
+						thresholdMet = false;
+						break;
+					}
+					if (!thresholdMet) {
+						break;
+					}
+				}
+				if (!thresholdMet){
+					break;
+				}
+			}
+			if (!thresholdMet) {
+				break;
+			}
+		}
+		printMatrix(weights);
+	}
+
+
+	/* (non-Javadoc)
+	 * @see SupervisedLearner#predict(double[], double[])
+	 */
+	@Override
+	public void predict(double[] features, double[] labels) throws Exception {
+//		for (int i = 0; i < features.length; i++) {
+//			System.out.println(features[i]);
+//		}
+		//loop through the array of input values and process them
+		for (int i = 0; i < features.length; i++) {
+			//loop through the neural network. 
+			for (int j = 0; j < weights.length; j++) {
+				for (int k = 0; k < weights[j].length; k++) {
+					//Two cases to account for
+					// In == weight length
+					// In < weight length
+				}
+			}
+			//made through NN and need to calculate the accuracy
+		}
+		//return accurate/(accurate+inaccurate);		
 	}
 }

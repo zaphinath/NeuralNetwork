@@ -24,10 +24,19 @@ public class Matrix {
 
 	static double MISSING = Double.MAX_VALUE; // representation of missing values in the dataset
 
-	// Creates a 0x0 matrix. You should call loadARFF or setSize next.
+	/**
+	 * Creates a 0x0 matrix. You should call loadARFF or setSize next.
+	 */
 	public Matrix() {}
 
-	// Copies the specified portion of that matrix into this matrix
+	/**
+	 * Copies the specified portion of that matrix into this matrix
+	 * @param that
+	 * @param rowStart
+	 * @param colStart
+	 * @param rowCount
+	 * @param colCount
+	 */
 	public Matrix(Matrix that, int rowStart, int colStart, int rowCount, int colCount) {
 		m_data = new ArrayList< double[] >();
 		for(int j = 0; j < rowCount; j++) {
@@ -47,7 +56,14 @@ public class Matrix {
 		}
 	}
 
-	// Adds a copy of the specified portion of that matrix to this matrix
+	/**
+	 * Adds a copy of the specified portion of that matrix to this matrix
+	 * @param that
+	 * @param rowStart
+	 * @param colStart
+	 * @param rowCount
+	 * @throws Exception
+	 */
 	public void add(Matrix that, int rowStart, int colStart, int rowCount) throws Exception {
 		if(colStart + cols() > that.cols())
 			throw new Exception("out of range");
@@ -64,7 +80,11 @@ public class Matrix {
 		}
 	}
 
-	// Resizes this matrix (and sets all attributes to be continuous)
+	/**
+	 * Resizes this matrix (and sets all attributes to be continuous)
+	 * @param rows
+	 * @param cols
+	 */
 	public void setSize(int rows, int cols) {
 		m_data = new ArrayList< double[] >();
 		for(int j = 0; j < rows; j++) {
@@ -81,7 +101,12 @@ public class Matrix {
 		}
 	}
 
-	// Loads from an ARFF file
+	/**
+	 *  Loads from an ARFF file
+	 * @param filename
+	 * @throws Exception
+	 * @throws FileNotFoundException
+	 */
 	public void loadArff(String filename) throws Exception, FileNotFoundException {
 		m_data = new ArrayList<double[]>();
 		m_attr_name = new ArrayList<String>();
@@ -116,7 +141,7 @@ public class Matrix {
 
 						int vals = 0;
 						String type = u.next().trim().toUpperCase();
-						if (type.equals("REAL") || type.equals("CONTINUOUS") || type.equals("INTEGER")) {
+						if (type.equals("REAL") || type.equals("CONTINUOUS") || type.equals("INTEGER") || type.equals("NUMERIC")) {
 						}
 						else {
 							try {
@@ -188,35 +213,74 @@ public class Matrix {
 		}
 	}
 
-	// Returns the number of rows in the matrix
+	/**
+	 * Number of rows in the matrix
+	 * @return the number of rows in the matrix
+	 */
 	int rows() { return m_data.size(); }
 
-	// Returns the number of columns (or attributes) in the matrix
+	/**
+	 * Number of Columns 
+	 * @return the number of columns (or attributes) in the matrix
+	 */
 	int cols() { return m_attr_name.size(); }
 
-	// Returns the specified row
+	/**
+	 * 
+	 * @param r
+	 * @return the specified row
+	 */
 	double[] row(int r) { return m_data.get(r); }
 
-	// Returns the element at the specified row and column
+	/**
+	 *   
+	 * @param r
+	 * @param c
+	 * @return the element at the specified row and column
+	 */
 	double get(int r, int c) { return m_data.get(r)[c]; }
 
-	// Sets the value at the specified row and column
+	/**
+	 * Sets the value at the specified row and column
+	 * @param r
+	 * @param c
+	 * @param v
+	 */
 	void set(int r, int c, double v) { row(r)[c] = v; }
 
-	// Returns the name of the specified attribute
+	/**
+	 *  
+	 * @param col
+	 * @return the name of the specified attribute
+	 */
 	String attrName(int col) { return m_attr_name.get(col); }
 
-	// Set the name of the specified attribute
+	/**
+	 * Set the name of the specified attribute
+	 * @param col
+	 * @param name
+	 */
 	void setAttrName(int col, String name) { m_attr_name.set(col, name); }
 
-	// Returns the name of the specified value
+	/**
+	 *  
+	 * @param attr
+	 * @param val
+	 * @return the name of the specified value
+	 */
 	String attrValue(int attr, int val) { return m_enum_to_str.get(attr).get(val); }
 
-	// Returns the number of values associated with the specified attribute (or column)
-	// 0=continuous, 2=binary, 3=trinary, etc.
+	/**
+	 * 0=continuous, 2=binary, 3=trinary, etc.
+	 * @param col
+	 * @return the number of values associated with the specified attribute (or column)
+	 */
 	int valueCount(int col) { return m_enum_to_str.get(col).size(); }
 
-	// Shuffles the row order
+	/**
+	 * Shuffles the row order
+	 * @param rand
+	 */
 	void shuffle(Random rand) {
 		for(int n = rows(); n > 0; n--) {
 			int i = rand.nextInt(n);
@@ -226,7 +290,11 @@ public class Matrix {
 		}
 	}
 
-	// Returns the mean of the specified column
+	/**
+	 *  
+	 * @param col
+	 * @return the mean of the specified column
+	 */
 	double columnMean(int col) {
 		double sum = 0;
 		int count = 0;
@@ -241,7 +309,11 @@ public class Matrix {
 		return sum / count;
 	}
 
-	// Returns the min value in the specified column
+	/**
+	 * 
+	 * @param col
+	 * @return the min value in the specified column
+	 */
 	double columnMin(int col) {
 		double m = MISSING;
 		for(int i = 0; i < rows(); i++) {
@@ -255,7 +327,11 @@ public class Matrix {
 		return m;
 	}
 
-	// Returns the max value in the specified column
+	/**
+	 * 
+	 * @param col
+	 * @return the max value in the specified column
+	 */
 	double columnMax(int col) {
 		double m = MISSING;
 		for(int i = 0; i < rows(); i++) {
@@ -269,7 +345,11 @@ public class Matrix {
 		return m;
 	}
 
-	// Returns the most common value in the specified column
+	/**
+	 * 
+	 * @param col
+	 * @return the most common value in the specified column
+	 */
 	double mostCommonValue(int col) {
 		TreeMap<Double, Integer> tm = new TreeMap<Double, Integer>();
 		for(int i = 0; i < rows(); i++) {
@@ -298,6 +378,9 @@ public class Matrix {
 		return val;
 	}
 
+	/**
+	 * Normalizes the Data
+	 */
 	void normalize() {
 		for(int i = 0; i < cols(); i++) {
 			if(valueCount(i) == 0) {
@@ -312,6 +395,9 @@ public class Matrix {
 		}
 	}
 
+	/**
+	 * Prints the data
+	 */
 	void print() {
 		System.out.println("@RELATION Untitled");
 		for(int i = 0; i < m_attr_name.size(); i++) {
