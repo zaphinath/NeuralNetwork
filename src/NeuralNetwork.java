@@ -538,19 +538,14 @@ public class NeuralNetwork extends SupervisedLearner {
 		//printMatrix(weights);
 		
 		//loop through all epocs and check for breaking conditions
-<<<<<<< HEAD
-		for (int h = 0; h < 1; h++) {
-			for (int i = 0; i< 1; i++) {
-				
-				train(features.row(i), new double[]{0,1,0});
-=======
+
 		for (int h = 0; h < maxEpochs; h++) {
 			//printMatrix(deltaWeights);
 			for (int i = 0; i< features.rows(); i++) {
 				double [] end = getResultsArray(labels, i);
 				//System.out.println("Lables" + labels.get(i, 0));
 				train(features.row(i), end);
->>>>>>> bd312c40e774ba507d1db7703e94464cecb992f9
+				System.out.println(features.row(i) + " " + end );
 			}
 			// check breaking conditions met
 			boolean thresholdMet = true;
