@@ -121,16 +121,24 @@ public class NeuralNetwork extends SupervisedLearner {
 						int tmpCount2 = 0; // keeps track of deltasig+1 col
 						//TODO Potential problem in calculation - watch carefully
 						//We want to start counting at the weights array at a new point based off the signodes before it's position
-						for (int k = (j/deltaSigNodes[i].length)*weights[i+1].length; k < weights[i+1].length-1; k++) {
+						//Need to wrap in semaphore due to logic for breaking
+						boolean firstIteration = true;
+						for (int k = (j*deltaSigNodes[i].length); k < weights[i+1].length; k++) {
+							if (k%sigNodes[i].length == 0 && k > 0 && !firstIteration) {
+								break;
+							}
+							firstIteration = false;
+							//System.out.println("i="+ i + "  j="+j + "  k="+ k);
 							if (weights[i+1].length == deltaSigNodes[i+1].length) {
-								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][k]);
+								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][tmpCount2]);
 							} else {
 								// dsig+1.length < weights+1.length
 								//uses tmpcount2
-								tmpSum += weights[i+1][tmpCount2] * deltaSigNodes[i+1][k];
-								if (weights[i+1].length % sigNodes[i+1].length == 0) {
-									break;
-								}
+								tmpSum += weights[i+1][k] * deltaSigNodes[i+1][tmpCount2];
+//								System.out.println("weight=" + weights[i+1][k] + "  deltaSigNode[i+1]="+ deltaSigNodes[i+1][tmpCount2]);
+//								if (weights[i+1].length % sigNodes[i+1].length == 0) {
+//									break;
+//								}
 								tmpCount2++;
 							}
 						}
@@ -150,6 +158,7 @@ public class NeuralNetwork extends SupervisedLearner {
 				//Need to account for end of array
 				if (i > 0) {
 					//for tmpcount
+					//System.out.println("deltasignodes[i]="+deltaSigNodes[i].length + "siglen="+deltaSigNodes.length);
 					if (deltaSigNodes[i].length == deltaWeights[i].length ){
 						//only one input at signodes[i-1]
 						tmpCount = k;
@@ -165,20 +174,30 @@ public class NeuralNetwork extends SupervisedLearner {
 							tmpCount2++;
 						}
 					}
-					System.out.println("i="+ i + "  k="+ k + "  [deltasignode]tmpCount=" + tmpCount + "  [signode-1]tmpCount2=" + tmpCount2);
+					if (sigNodes[i-1].length == 1) {
+						tmpCount2 = 0;
+					}
+					//System.out.println("i="+ i + "  k="+ k + "  [deltasignode]tmpCount=" + tmpCount + "  [signode-1]tmpCount2=" + tmpCount2);
 					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
 					tmpCount++;
 				//Where i = 0 and we need to use input nodes.
 				} else {
-					//System.out.println("tmpCount2=" + tmpCount2 + "  inputLength="+inputValues.length + "  deltaWeights[i].length="+deltaWeights[i].length + "  k="+k);
-					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
+					//tmpCount
+					if (tmpCount == deltaSigNodes.length-1) {
+						tmpCount = 0;
+					}
+					//tmpCount2
 					if (inputValues.length == deltaWeights[i].length) {
 						tmpCount2 = k;
 					} else {
-						if (k/deltaSigNodes[i].length == 1) {
+						if (k % deltaSigNodes[i].length == 0 && k > 0) {
 							tmpCount2++;
 						}
 					}
+					//System.out.println("k=" + k + "  tmpCount[deltasignode[i]]="+ tmpCount);
+					//System.out.println("  k="+k + "  [signode-1]tmpCount2=" + tmpCount2 + "  inputLength="+inputValues.length + "  deltaWeights[i].length="+deltaWeights[i].length);
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
+					tmpCount++;
 				}
 				
 			}
@@ -515,8 +534,8 @@ public class NeuralNetwork extends SupervisedLearner {
 	@Override
 	public void train(Matrix features, Matrix labels) throws Exception {
 		this.numInput = features.cols();
-		this.numHidden = 3;
-		this.numNodesPerHidden = new int[]{3,3,3};
+		this.numHidden = 1;
+		this.numNodesPerHidden = new int[]{1};
 		this.numOutput = labels.valueCount(0);
 		
 		this.weights = createWeights(numInput, numHidden, numNodesPerHidden, numOutput);
@@ -528,9 +547,9 @@ public class NeuralNetwork extends SupervisedLearner {
 		
 		//loop through all epocs and check for breaking conditions
 
-		for (int h = 0; h < 1; h++) {
+		for (int h = 0; h < maxEpochs; h++) {
 			//printMatrix(deltaWeights);
-			for (int i = 0; i< 1; i++) {
+			for (int i = 0; i< features.rows(); i++) {
 				double [] end = getResultsArray(labels, i);
 				//System.out.println("Lables" + labels.get(i, 0));
 				train(features.row(i), end);
@@ -538,19 +557,20 @@ public class NeuralNetwork extends SupervisedLearner {
 //					System.out.print(features.row(i)[foo]+ "  ");
 //					System.out.println("result="+labels.get(i, 0));
 //				}
-				for (int j = 0; j < end.length; j++) {
-					System.out.print(end[j] + "  ");
-				}
+//				for (int j = 0; j < end.length; j++) {
+//					System.out.print(end[j] + "  ");
+//				}
+//				System.out.println();
 			}
 			//printMatrix(weights);
 			// check breaking conditions met
-			System.out.println("Sig Nodes");
-			printMatrix(sigNodes);
-			System.out.println("Delta Sig Nodes");
-			printMatrix(deltaSigNodes);
-			System.out.println("delta Weights");
-			printMatrix(deltaWeights);
 
+//			System.out.println("Sig Nodes");
+//			printMatrix(sigNodes);
+//			System.out.println("Delta Sig Nodes");
+//			printMatrix(deltaSigNodes);
+//			System.out.println("delta Weights");
+//			printMatrix(deltaWeights);
 			
 			boolean thresholdMet = true;
 			for (int i = 0; i < deltaWeights.length; i++) {
