@@ -11,11 +11,11 @@ import java.util.Random;
  */
 public class NeuralNetwork extends SupervisedLearner {
 	
-	private int maxEpochs = 500;
+	private int maxEpochs = 1000;
 	private double learnRate = 0.5;
 	private double startWeightMax = .2;
 	private double startWeightMin = -.2;
-	private double momentum = .3;
+	private double momentum = .5;
 	private boolean haveMomentum = false;
 	private double stoppingThreshold = .05;
 	
@@ -117,7 +117,9 @@ public class NeuralNetwork extends SupervisedLearner {
 						//TODO - formula may be wrong - may want weights*deltaweights
 						double tmpSum = 0;
 						int tmpCount2 = 0; // keeps track of deltasig+1 col
-						for (int k = j*weights[i+1].length; k < weights[i+1].length-1; k++) {
+						//TODO Potential problem in calculation - watch carefully
+						//We want to start counting at the weights array at a new point based off the signodes before it's position
+						for (int k = (j/deltaSigNodes[i].length)*weights[i+1].length; k < weights[i+1].length-1; k++) {
 							if (weights[i+1].length == deltaSigNodes[i+1].length) {
 								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][k]);
 							} else {
@@ -130,6 +132,7 @@ public class NeuralNetwork extends SupervisedLearner {
 								tmpCount2++;
 							}
 						}
+						//System.out.println("tmpSum:"+tmpSum);
 						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(tmpSum);
 					} else {
 						// case where they are equal. it will never be less
@@ -143,6 +146,7 @@ public class NeuralNetwork extends SupervisedLearner {
 			for (int k = 0; k < deltaWeights[i].length; k++) {
 				//Need to account for end of array
 				if (i > 0) {
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
 					//for tmpcount
 					if (deltaSigNodes[i].length > deltaWeights[i].length) {
 						// won't happen according to my design
@@ -152,6 +156,14 @@ public class NeuralNetwork extends SupervisedLearner {
 						// case where deltaSigNodes[i].length < deltaWeights[i].length
 						//TODO
 						//System.out.println("WARNING");
+						if (k/deltaSigNodes[i].length == 1) {
+							tmpCount++;
+//							System.out.println(tmpCount);
+//							System.out.println("LENGTH: "+ deltaSigNodes[i].length);
+							if (tmpCount == deltaSigNodes[i].length) {
+								tmpCount--;
+							}
+						}
 						
 					}
 					//for tmpcount2
@@ -161,21 +173,23 @@ public class NeuralNetwork extends SupervisedLearner {
 					} else if (deltaSigNodes[i-1].length == deltaWeights[i].length) {
 						tmpCount2 = k;
 					} else {
-						if (k/deltaWeights[i].length == 1) {
+						if (k%deltaWeights[i].length == 0) {
 							tmpCount2++;
 						}
 					}
-					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
+					
 				} else {
+					//System.out.println("tmpCount2=" + tmpCount2 + "  inputLength="+inputValues.length + "  deltaWeights[i].length="+deltaWeights[i].length + "  k="+k);
+					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
 					//Where i = 0 and we need to use input nodes.
 					if (inputValues.length == deltaWeights[i].length) {
 						tmpCount2 = k;
 					} else {
-						if (k/deltaWeights[i].length == 1) {
+						if (k/deltaSigNodes[i].length == 1) {
 							tmpCount2++;
 						}
 					}
-					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * inputValues[tmpCount2];
+
 				}
 				
 			}
@@ -390,13 +404,14 @@ public class NeuralNetwork extends SupervisedLearner {
 	 */
 	private double[][] createWeights(int numInput,
 			int numHidden, int[] numNodesPerHidden, int numOutput) {
+		
 		double[][] w = new double[numHidden + 1][];
 		//Set num weights from input nodes
 		w[0] = new double[numInput*numNodesPerHidden[0]];
 		for (int i = 0; i < w[0].length; i++) {
 			double random = new Random().nextDouble();
 			double result = startWeightMin + (random * (startWeightMax - startWeightMin));
-			w[0][i] = result;
+			w[0][i] = .2;
 		}
 		//set output of each hidden
 		for (int i = 1; i < numHidden; i++) {
@@ -404,7 +419,7 @@ public class NeuralNetwork extends SupervisedLearner {
 			for (int j = 0; j < w[i].length; j++) {
 				double random = new Random().nextDouble();
 				double result = startWeightMin + (random * (startWeightMax - startWeightMin));
-				w[i][j] = result;
+				w[i][j] = .2;
 			}
 		}
 		//set last weight between last hidden and output
@@ -412,7 +427,7 @@ public class NeuralNetwork extends SupervisedLearner {
 		for (int i = 0; i < w[numHidden].length; i++) {
 			double random = new Random().nextDouble();
 			double result = startWeightMin + (random * (startWeightMax - startWeightMin));
-			w[numHidden][i] = result;
+			w[numHidden][i] = .2;
 		}		
 		return w;
 	}
@@ -449,9 +464,11 @@ public class NeuralNetwork extends SupervisedLearner {
 
 	public void printMatrix(double[][] matrix) {
 		for (int i = 0; i < matrix.length; i++) {
+			System.out.print("i=" + i + "  (");
 			for (int j = 0; j < matrix[i].length; j++) {
-				System.out.println("i=" + i + "  j=" + j + "  value="+matrix[i][j]);
+				System.out.print("["+matrix[i][j]+"] ");
 			}
+			System.out.println(")");
 		}
 	}
 
@@ -483,14 +500,34 @@ public class NeuralNetwork extends SupervisedLearner {
 		this.haveMomentum = haveMomentum;
 	}
 
+	private double[] getResultsArray(Matrix labels, int index) {
+		double[] result = new double[labels.valueCount(0)];
+		
+		for (int i = 0; i < result.length; i++) {
+			//System.out.println("labels=" + (int)labels.get(i, 0) + "  i=" + i);
+			if (labels.get(index, 0) == i) {
+				result[i] = 1;
+				//System.out.println("HERE");
+			} else {
+				result[i] = 0;
+			}
+		}
+//		System.out.print("RESULT[");
+//		for (int i = 0; i < result.length; i++) {
+//			System.out.print("i=" + i + "  [i]="+ result[i] + "  ");
+//		}
+//		System.out.println("] @ index="+index);
+		return result;
+	}
+	
 	/* (non-Javadoc)
 	 * @see SupervisedLearner#train(Matrix, Matrix)
 	 */
 	@Override
 	public void train(Matrix features, Matrix labels) throws Exception {
 		this.numInput = features.cols();
-		this.numHidden = 10;
-		this.numNodesPerHidden = new int[]{10,10,10,10,10,10,10,5,5,5};
+		this.numHidden = 3;
+		this.numNodesPerHidden = new int[]{3,3,3};
 		this.numOutput = labels.valueCount(0);
 		
 		this.weights = createWeights(numInput, numHidden, numNodesPerHidden, numOutput);
@@ -501,10 +538,19 @@ public class NeuralNetwork extends SupervisedLearner {
 		//printMatrix(weights);
 		
 		//loop through all epocs and check for breaking conditions
+<<<<<<< HEAD
 		for (int h = 0; h < 1; h++) {
 			for (int i = 0; i< 1; i++) {
 				
 				train(features.row(i), new double[]{0,1,0});
+=======
+		for (int h = 0; h < maxEpochs; h++) {
+			//printMatrix(deltaWeights);
+			for (int i = 0; i< features.rows(); i++) {
+				double [] end = getResultsArray(labels, i);
+				//System.out.println("Lables" + labels.get(i, 0));
+				train(features.row(i), end);
+>>>>>>> bd312c40e774ba507d1db7703e94464cecb992f9
 			}
 			// check breaking conditions met
 			boolean thresholdMet = true;
@@ -526,7 +572,8 @@ public class NeuralNetwork extends SupervisedLearner {
 				break;
 			}
 		}
-		printMatrix(weights);
+		//printMatrix(deltaSigNodes);
+		//printMatrix(weights);
 	}
 
 
@@ -535,21 +582,53 @@ public class NeuralNetwork extends SupervisedLearner {
 	 */
 	@Override
 	public void predict(double[] features, double[] labels) throws Exception {
-//		for (int i = 0; i < features.length; i++) {
-//			System.out.println(features[i]);
-//		}
-		//loop through the array of input values and process them
-		for (int i = 0; i < features.length; i++) {
-			//loop through the neural network. 
-			for (int j = 0; j < weights.length; j++) {
-				for (int k = 0; k < weights[j].length; k++) {
-					//Two cases to account for
-					// In == weight length
-					// In < weight length
+		//First we take each node times a weight and store it in deltaweights for tmp
+		//Next we add the deltaweight tmp storage to the right sigNode
+		//Then we determine the output node which is the highest and return that value
+		for (int i = 0; i < sigNodes.length; i++) {
+			int tmpCount = 0; // use to keep track of input nodes
+			//update deltaWeights with tmp calc for each i
+			for (int j = 0; j < deltaWeights[i].length; j++) {
+				// uses input nodes
+				if (i == 0) {
+					deltaWeights[i][j] = weights[i][j]*features[tmpCount];
+					if (j % features.length == 0) {
+						tmpCount++;
+					}
+				} else {
+					deltaWeights[i][j] = weights[i][j]*sigNodes[i-1][tmpCount];
+					if (deltaWeights[i].length == sigNodes[i-1].length) {
+						tmpCount++;
+					} else {
+						if (j % sigNodes[i-1].length == 0) {
+							tmpCount++;
+							if (tmpCount >= sigNodes[i-1].length) {
+								tmpCount = sigNodes[i-1].length -1;
+							}
+						}
+					}
 				}
 			}
-			//made through NN and need to calculate the accuracy
+			//update signode at each i
+			tmpCount = 0;
+			for (int j = 0; j < deltaWeights[i].length; j++) {
+				sigNodes[i][tmpCount] += deltaWeights[i][j];
+				if (j % sigNodes[i].length == 0) {
+					tmpCount = 0;
+				} else {
+					tmpCount++;
+				}
+			}
 		}
-		//return accurate/(accurate+inaccurate);		
+		printMatrix(sigNodes);
+		labels[0] = 0;
+		//System.out.println("Signodes Length: " + sigNodes.length);
+		for (int i = 1; i < numOutput; i++) {
+			//System.out.println("i=" + i +"  @i="+sigNodes[sigNodes.length-1][i] + "  @i-1="+sigNodes[sigNodes.length-1][i-1]);
+			if (sigNodes[sigNodes.length-1][i] > sigNodes[sigNodes.length-1][i-1] ) {
+				labels[0] = i;
+			}
+		}
+		//System.out.println(labels[0]);
 	}
 }
