@@ -30,6 +30,8 @@ public class NeuralNetwork extends SupervisedLearner {
 	private double[][] deltaSigNodes; // the deltaSigmoid backprop calc
 	private double[][] deltaWeights; // the delta in weight changes 
 	
+	private Random rand;
+	
 	public NeuralNetwork(int numInput, int numHidden, int[] numNodesPerHidden, int numOutput) {
 		assert numNodesPerHidden.length == numHidden;
 		
@@ -51,6 +53,7 @@ public class NeuralNetwork extends SupervisedLearner {
 	 */
 	public NeuralNetwork(Random rand) {
 		// TODO Auto-generated constructor stub
+		this.rand = rand;
 	}
 
 
@@ -542,6 +545,8 @@ public class NeuralNetwork extends SupervisedLearner {
 		this.sigNodes = createSigmoidMatrix(numHidden, numNodesPerHidden,numOutput);
 		this.deltaSigNodes = cloneEmptyMatrix(sigNodes);
 		this.deltaWeights = cloneEmptyMatrix(weights);
+		
+		features.shuffle(rand);
 		
 		//printMatrix(weights);
 		
