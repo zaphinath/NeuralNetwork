@@ -501,8 +501,8 @@ public class NeuralNetwork extends SupervisedLearner {
 		//printMatrix(weights);
 		
 		//loop through all epocs and check for breaking conditions
-		for (int h = 0; h < maxEpochs; h++) {
-			for (int i = 0; i< features.rows(); i++) {
+		for (int h = 0; h < 1; h++) {
+			for (int i = 0; i< 1; i++) {
 				
 				train(features.row(i), new double[]{0,1,0});
 			}
