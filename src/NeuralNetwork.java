@@ -67,6 +67,7 @@ public class NeuralNetwork extends SupervisedLearner {
 					// Loop through weights
 					for (int k = 0; k < weights[i].length; k++) {
 						//TODO possible bug because i think there is a 3rd case here
+						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
 						if (weights[i].length > inputValues.length) {
 							if (k%inputValues.length == 0) {
 								tmpCount++;
@@ -80,7 +81,7 @@ public class NeuralNetwork extends SupervisedLearner {
 						//System.out.println(weights[i][k]);
 						//System.out.println(inputValues[tmpCount]);
 						//System.out.println("tmpCount = "+tmpCount + "  k = "+k);
-						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
+						
 					}
 					//Add tmp values per sigNodes[i][j];
 					for ( int k = 0; k < preSigmoid.length; k++) {
@@ -101,6 +102,7 @@ public class NeuralNetwork extends SupervisedLearner {
 				sigNodes[i][j] = 1/(1+Math.pow(Math.E,-(tmpSum)));
 			}
 		}
+		//printMatrix(sigNodes);
 		//Sigmoids are calculated 
 		//BackPropogate and update weights
 		// calculate deltasigmoids && deltaweights
@@ -545,9 +547,14 @@ public class NeuralNetwork extends SupervisedLearner {
 				double [] end = getResultsArray(labels, i);
 				//System.out.println("Lables" + labels.get(i, 0));
 				train(features.row(i), end);
-				System.out.println(features.row(i) + " " + end );
+//				for (int foo = 0; foo < features.row(i).length; foo++) {
+//					System.out.print(features.row(i)[foo]+ "  ");
+//					System.out.println("result="+labels.get(i, 0));
+//				}
 			}
+			//printMatrix(weights);
 			// check breaking conditions met
+			//printMatrix(sigNodes);
 			boolean thresholdMet = true;
 			for (int i = 0; i < deltaWeights.length; i++) {
 				for (int j = 0; j < deltaWeights[i].length; j++) {
@@ -615,7 +622,7 @@ public class NeuralNetwork extends SupervisedLearner {
 				}
 			}
 		}
-		printMatrix(sigNodes);
+		//printMatrix(sigNodes);
 		labels[0] = 0;
 		//System.out.println("Signodes Length: " + sigNodes.length);
 		for (int i = 1; i < numOutput; i++) {
