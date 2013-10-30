@@ -71,11 +71,12 @@ public class MLSystemManager {
 			learner.train(features, labels);
 			double elapsedTime = System.currentTimeMillis() - startTime;
 			System.out.println("Time to train (in seconds): " + elapsedTime / 1000.0);
-			double accuracy = learner.measureAccuracy(features, labels, confusion);
+			double accuracy = learner.measureAccuracy(features, labels, null);
+			//double accuracy = learner.measureAccuracy(features, labels, confusion);
 			System.out.println("Training set accuracy: " + accuracy);
 			if(printConfusionMatrix) {
 				System.out.println("\nConfusion matrix: (Row=target value, Col=predicted value)");
-				confusion.print();
+				//confusion.print();
 				System.out.println("\n");
 			}
 		}
@@ -100,7 +101,8 @@ public class MLSystemManager {
 			Matrix testFeatures = new Matrix(testData, 0, 0, testData.rows(), testData.cols() - 1);
 			Matrix testLabels = new Matrix(testData, 0, testData.cols() - 1, testData.rows(), 1);
 			Matrix confusion = new Matrix();
-			double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, confusion);
+			//double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, confusion);
+			double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, null);
 			System.out.println("Test set accuracy: " + testAccuracy);
 			if(printConfusionMatrix) {
 				System.out.println("\nConfusion matrix: (Row=target value, Col=predicted value)");
@@ -129,7 +131,8 @@ public class MLSystemManager {
 			double trainAccuracy = learner.measureAccuracy(trainFeatures, trainLabels, null);
 			System.out.println("Training set accuracy: " + trainAccuracy);
 			Matrix confusion = new Matrix();
-			double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, confusion);
+			//double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, confusion);
+			double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, null);
 			System.out.println("Test set accuracy: " + testAccuracy);
 			if(printConfusionMatrix) {
 				System.out.println("\nConfusion matrix: (Row=target value, Col=predicted value)");
