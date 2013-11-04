@@ -11,7 +11,7 @@ import java.util.Random;
  */
 public class NeuralNetwork extends SupervisedLearner {
 	
-	private int maxEpochs = 1000;
+	private int maxEpochs = 10000;
 	private double learnRate = 0.5;
 	private double startWeightMax = .2;
 	private double startWeightMin = -.2;
@@ -70,7 +70,6 @@ public class NeuralNetwork extends SupervisedLearner {
 					// Loop through weights
 					for (int k = 0; k < weights[i].length; k++) {
 						//TODO possible bug because i think there is a 3rd case here
-						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
 						if (weights[i].length > inputValues.length) {
 							if (k%inputValues.length == 0) {
 								tmpCount++;
@@ -81,15 +80,18 @@ public class NeuralNetwork extends SupervisedLearner {
 						if (tmpCount >= inputValues.length) {
 							break;
 						}
-						//System.out.println(weights[i][k]);
-						//System.out.println(inputValues[tmpCount]);
-						//System.out.println("tmpCount = "+tmpCount + "  k = "+k);
-						
+						preSigmoid[k] = weights[i][k]*inputValues[tmpCount];
+//						System.out.println("FUGLY="+inputValues[tmpCount]+"  tmpcount="+tmpCount);
+//						System.out.println(weights[i][k]);
+//						System.out.println(inputValues[tmpCount]);
+//						System.out.println("tmpCount = "+tmpCount + "  k = "+k);
+//						System.out.println("preSigmoid[k]="+preSigmoid[k]);
 					}
 					//Add tmp values per sigNodes[i][j];
 					for ( int k = 0; k < preSigmoid.length; k++) {
+						//System.out.println("presigmoid="+preSigmoid[k]);
 						if (k % sigNodes[i].length == j) {
-							//System.out.println("K="+ k + " preSig=" + preSigmoid[k]);
+							//System.out.println("K="+ k + " preSig=" + preSigmoid[k]+ "  j="+j);
 							tmpSum += preSigmoid[k];
 						}
 					}
@@ -102,6 +104,7 @@ public class NeuralNetwork extends SupervisedLearner {
 						}
 					}
 				}
+				//System.out.println("tmpSum="+tmpSum);
 				sigNodes[i][j] = 1/(1+Math.pow(Math.E,-(tmpSum)));
 			}
 		}
@@ -127,13 +130,15 @@ public class NeuralNetwork extends SupervisedLearner {
 						//Need to wrap in semaphore due to logic for breaking
 						boolean firstIteration = true;
 						for (int k = (j*deltaSigNodes[i].length); k < weights[i+1].length; k++) {
-							if (k%sigNodes[i].length == 0 && k > 0 && !firstIteration) {
-								break;
-							}
+//							if (k%sigNodes[i].length == 0 && k > 0 && !firstIteration) {
+//								break;
+//							}
 							firstIteration = false;
-							//System.out.println("i="+ i + "  j="+j + "  k="+ k);
+							//System.out.println("i="+ i + "  j="+j + "  k="+ k + " j*dsn="+j*deltaSigNodes[i].length);
 							if (weights[i+1].length == deltaSigNodes[i+1].length) {
-								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][tmpCount2]);
+//								System.out.println("weights=nodes   tmpCount2="+tmpCount2);
+								//tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][tmpCount2]);
+								tmpSum += (weights[i+1][k] * deltaSigNodes[i+1][k]);
 							} else {
 								// dsig+1.length < weights+1.length
 								//uses tmpcount2
@@ -144,8 +149,9 @@ public class NeuralNetwork extends SupervisedLearner {
 //								}
 								tmpCount2++;
 							}
+//							System.out.println("K="+k+ "  tmpSum="+tmpSum);
 						}
-						//System.out.println("tmpSum:"+tmpSum);
+//						System.out.println("tmpSum:"+tmpSum);
 						deltaSigNodes[i][j] = sigNodes[i][j]*(1-sigNodes[i][j])*(tmpSum);
 					} else {
 						// case where they are equal. it will never be less
@@ -180,7 +186,12 @@ public class NeuralNetwork extends SupervisedLearner {
 					if (sigNodes[i-1].length == 1) {
 						tmpCount2 = 0;
 					}
-					//System.out.println("i="+ i + "  k="+ k + "  [deltasignode]tmpCount=" + tmpCount + "  [signode-1]tmpCount2=" + tmpCount2);
+					if (tmpCount2 >= sigNodes[i-1].length) {
+						tmpCount2--;
+					}
+					System.out.print("i="+ i + "  k="+ k);
+					System.out.print("  [deltasignode]tmpCount=" + tmpCount);
+					System.out.println("  [signode-1]tmpCount2=" + tmpCount2);
 					deltaWeights[i][k] = learnRate * deltaSigNodes[i][tmpCount] * sigNodes[i-1][tmpCount2];
 					tmpCount++;
 				//Where i = 0 and we need to use input nodes.
@@ -538,7 +549,7 @@ public class NeuralNetwork extends SupervisedLearner {
 	public void train(Matrix features, Matrix labels) throws Exception {
 		this.numInput = features.cols();
 		this.numHidden = 1;
-		this.numNodesPerHidden = new int[]{1};
+		this.numNodesPerHidden = new int[]{2};
 		this.numOutput = labels.valueCount(0);
 		
 		this.weights = createWeights(numInput, numHidden, numNodesPerHidden, numOutput);
@@ -570,13 +581,6 @@ public class NeuralNetwork extends SupervisedLearner {
 			//printMatrix(weights);
 			// check breaking conditions met
 
-//			System.out.println("Sig Nodes");
-//			printMatrix(sigNodes);
-//			System.out.println("Delta Sig Nodes");
-//			printMatrix(deltaSigNodes);
-//			System.out.println("delta Weights");
-//			printMatrix(deltaWeights);
-			
 			boolean thresholdMet = true;
 			for (int i = 0; i < deltaWeights.length; i++) {
 				for (int j = 0; j < deltaWeights[i].length; j++) {
@@ -598,6 +602,15 @@ public class NeuralNetwork extends SupervisedLearner {
 		}
 		//printMatrix(deltaSigNodes);
 		//printMatrix(weights);
+//		System.out.println("Sig Nodes");
+//		printMatrix(sigNodes);
+//		System.out.println("Delta Sig Nodes");
+//		printMatrix(deltaSigNodes);
+//		System.out.println("delta Weights");
+//		printMatrix(deltaWeights);
+//		System.out.println("Weights");
+//		printMatrix(weights);
+//		
 	}
 
 
@@ -610,38 +623,52 @@ public class NeuralNetwork extends SupervisedLearner {
 		//Next we add the deltaweight tmp storage to the right sigNode
 		//Then we determine the output node which is the highest and return that value
 		for (int i = 0; i < sigNodes.length; i++) {
-			int tmpCount = 0; // use to keep track of input nodes
-			//update deltaWeights with tmp calc for each i
-			for (int j = 0; j < deltaWeights[i].length; j++) {
-				// uses input nodes
+			for (int j = 0; j < sigNodes[i].length; j++) {
+				double tmpSum = 0;
+				// first sigNode array - uses input values
 				if (i == 0) {
-					deltaWeights[i][j] = weights[i][j]*features[tmpCount];
-					if (j % features.length == 0) {
-						tmpCount++;
+					// Make tmp array of values input * weight => same size as weight
+					double[] preSigmoid = new double[weights[i].length];
+					int tmpCount = 0; // corresponds to input node
+					// Loop through weights
+					for (int k = 0; k < weights[i].length; k++) {
+						//TODO possible bug because i think there is a 3rd case here
+						if (weights[i].length > features.length) {
+							if (k%features.length == 0) {
+								tmpCount++;
+							}
+						} else {
+							tmpCount=k;
+						}
+						if (tmpCount >= features.length) {
+							break;
+						}
+						preSigmoid[k] = weights[i][k]*features[tmpCount];
+//						System.out.println("FUGLY="+inputValues[tmpCount]+"  tmpcount="+tmpCount);
+//						System.out.println(weights[i][k]);
+//						System.out.println(inputValues[tmpCount]);
+//						System.out.println("tmpCount = "+tmpCount + "  k = "+k);
+//						System.out.println("preSigmoid[k]="+preSigmoid[k]);
+					}
+					//Add tmp values per sigNodes[i][j];
+					for ( int k = 0; k < preSigmoid.length; k++) {
+						//System.out.println("presigmoid="+preSigmoid[k]);
+						if (k % sigNodes[i].length == j) {
+							//System.out.println("K="+ k + " preSig=" + preSigmoid[k]+ "  j="+j);
+							tmpSum += preSigmoid[k];
+						}
 					}
 				} else {
-					deltaWeights[i][j] = weights[i][j]*sigNodes[i-1][tmpCount];
-					if (deltaWeights[i].length == sigNodes[i-1].length) {
-						tmpCount++;
-					} else {
-						if (j % sigNodes[i-1].length == 0) {
+					for (int k = 0; k < weights[i].length; k++) {
+						int tmpCount = 0; // this is to match the input node position 
+						if (k % sigNodes[i].length == j) {
+							tmpSum += sigNodes[i-1][tmpCount]*weights[i][k];
 							tmpCount++;
-							if (tmpCount >= sigNodes[i-1].length) {
-								tmpCount = sigNodes[i-1].length -1;
-							}
 						}
 					}
 				}
-			}
-			//update signode at each i
-			tmpCount = 0;
-			for (int j = 0; j < deltaWeights[i].length; j++) {
-				sigNodes[i][tmpCount] += deltaWeights[i][j];
-				if (j % sigNodes[i].length == 0) {
-					tmpCount = 0;
-				} else {
-					tmpCount++;
-				}
+				//System.out.println("tmpSum="+tmpSum);
+				sigNodes[i][j] = 1/(1+Math.pow(Math.E,-(tmpSum)));
 			}
 		}
 		//printMatrix(sigNodes);
